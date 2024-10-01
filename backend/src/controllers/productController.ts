@@ -1,6 +1,6 @@
 // src/controllers/productController.ts
 import { Request, Response, NextFunction } from 'express';
-import Product from '../models/product';
+import Product from '../models/Product';
 
 
 // Função para criar um produto
