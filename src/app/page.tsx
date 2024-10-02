@@ -46,22 +46,37 @@ const HomePage = () => {
     const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
     const [confirmDeleteProduct, setConfirmDeleteProduct] = useState<Product | null>(null);
     const [newProduct, setNewProduct] = useState<Product>({ id: 0, name: '', description: '', price: 0, available: false });
+    const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        const fetchProducts = async () => {
-            const response = await fetch('/api/products');
-            const data = await response.json();
-            const formattedProducts = data.map((product: Product) => ({
-                ...product,
-                price: typeof product.price === 'number' ? product.price : parseFloat(product.price) || 0, // Ensure price is a number
-            }));
-            setProducts(formattedProducts);
-        };
-        
+                    const fetchProducts = async () => {
+                try {
+                    const response = await fetch('/api/products');
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok');
+                    }
+                    const data = await response.json();
+                    const formattedProducts = data.map((product: Product) => ({
+                        ...product,
+                        price: typeof product.price === 'number' ? product.price : parseFloat(product.price) || 0,
+                    }));
+                    setProducts(formattedProducts);
+                } catch (error) {
+                    console.error('Error fetching products:', error);
+                    // Handle error (e.g., show error message)
+                } finally {
+                    setLoading(false); // Set loading to false after the fetch is complete
+                }
+            };
 
+    
         fetchProducts();
     }, []);
-
+    
+    const formatPrice = (price: number) => {
+        return price.toFixed(2).replace('.', ','); // Formato brasileiro
+    };
+    
     const handleSort = () => {
         const sortedProducts = [...products].sort((a, b) => {
             return sortOrder === 'asc' ? a.price - b.price : b.price - a.price;
@@ -75,16 +90,15 @@ const HomePage = () => {
         setIsCreateDialogOpen(false);
         setNewProduct({ id: 0, name: '', description: '', price: 0, available: false }); // Reset form
     };
-
+    
     const handleUpdateProduct = () => {
         if (selectedProduct) {
-            setProducts((prev) => prev.map((p) => (p.id === selectedProduct.id ? { ...selectedProduct, ...newProduct } : p)));
+            setProducts((prev) => prev.map((p) => (p.id === selectedProduct.id ? { ...p, ...newProduct } : p)));
             setIsEditDialogOpen(false);
             setSelectedProduct(null);
             setNewProduct({ id: 0, name: '', description: '', price: 0, available: false }); // Reset form
         }
     };
-
     const handleDeleteProduct = (id: number) => {
         setProducts((prev) => prev.filter((product) => product.id !== id));
         setIsDeleteDialogOpen(false);
@@ -100,6 +114,7 @@ const HomePage = () => {
 
     return (
         <div className="flex flex-col p-4 space-y-4">
+            
             <h1 className="text-2xl font-bold">Lista de Produtos</h1>
             <div className="flex flex-col md:flex-row justify-between space-y-4 md:space-y-0 md:space-x-4">
                 <Input
@@ -298,19 +313,18 @@ const HomePage = () => {
             <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
                 <DialogContent>
                     <DialogHeader>
-                        <DialogTitle>Excluir Produto</DialogTitle>
+                        <DialogTitle>Confirmar Exclusão</DialogTitle>
                         <DialogDescription>
-                            Tem certeza que deseja excluir o produto "{confirmDeleteProduct?.name}"?
+                            Você tem certeza que deseja excluir o produto "{confirmDeleteProduct?.name}"?
                         </DialogDescription>
                     </DialogHeader>
                     <DialogFooter>
-                        <Button onClick={() => handleDeleteProduct(confirmDeleteProduct!.id)} className="text-red-500">
-                            Excluir
-                        </Button>
+                        <Button onClick={() => handleDeleteProduct(confirmDeleteProduct?.id!)}>Excluir</Button>
                         <Button onClick={() => setIsDeleteDialogOpen(false)}>Cancelar</Button>
                     </DialogFooter>
                 </DialogContent>
             </Dialog>
+
         </div>
     );
 };
