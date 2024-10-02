@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { z } from 'zod';
 import {
     Table,
     TableBody,
@@ -24,7 +25,6 @@ import {
 import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { FaTrashAlt, FaEdit, FaArrowDown, FaArrowUp } from 'react-icons/fa';
 import { HiPlus } from 'react-icons/hi';
-
 interface Product {
     id: number;
     name: string;
@@ -33,88 +33,124 @@ interface Product {
     available: boolean;
 }
 
+const productSchema = z.object({
+    name: z.string().min(1, 'O nome é obrigatório'),
+    description: z.string().optional(),
+    price: z.number().positive('O preço deve ser um número positivo'),
+    available: z.boolean(),
+});
+
 const ITEMS_PER_PAGE = 5;
 
 const HomePage = () => {
     const [products, setProducts] = useState<Product[]>([]);
-    const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
-    const [searchTerm, setSearchTerm] = useState('');
-    const [currentPage, setCurrentPage] = useState(1);
-    const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
     const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
     const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
     const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+    const [newProduct, setNewProduct] = useState<Product>({ id: 0, name: '', description: '', price: 0, available: true });
+    const [errors, setErrors] = useState<{ [key: string]: string }>({});
     const [confirmDeleteProduct, setConfirmDeleteProduct] = useState<Product | null>(null);
-    const [newProduct, setNewProduct] = useState<Product>({ id: 0, name: '', description: '', price: 0, available: false });
-    const [loading, setLoading] = useState(true);
+    const [searchTerm, setSearchTerm] = useState('');
+    const [currentPage, setCurrentPage] = useState(1);
+    const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
 
     useEffect(() => {
-                    const fetchProducts = async () => {
-                try {
-                    const response = await fetch('/api/products');
-                    if (!response.ok) {
-                        throw new Error('Network response was not ok');
-                    }
-                    const data = await response.json();
-                    const formattedProducts = data.map((product: Product) => ({
-                        ...product,
-                        price: typeof product.price === 'number' ? product.price : parseFloat(product.price) || 0,
-                    }));
-                    setProducts(formattedProducts);
-                } catch (error) {
-                    console.error('Error fetching products:', error);
-                    // Handle error (e.g., show error message)
-                } finally {
-                    setLoading(false); // Set loading to false after the fetch is complete
+        const fetchProducts = async () => {
+            try {
+                const response = await fetch('/api/products');
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
                 }
-            };
+                const data = await response.json();
+                const formattedProducts = data.map((product: Product) => ({
+                    ...product,
+                    price: typeof product.price === 'number' ? product.price : parseFloat(product.price) || 0,
+                }));
+                setProducts(formattedProducts);
+            } catch (error) {
+                console.error('Error fetching products:', error);
+            }
+        };
 
-    
         fetchProducts();
     }, []);
-    
-    const formatPrice = (price: number) => {
-        return price.toFixed(2).replace('.', ','); // Formato brasileiro
-    };
-    
-    const handleSort = () => {
-        const sortedProducts = [...products].sort((a, b) => {
-            return sortOrder === 'asc' ? a.price - b.price : b.price - a.price;
-        });
-        setProducts(sortedProducts);
-        setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
-    };
 
     const handleCreateProduct = () => {
-        setProducts((prev) => [...prev, { ...newProduct, id: Date.now() }]);
-        setIsCreateDialogOpen(false);
-        setNewProduct({ id: 0, name: '', description: '', price: 0, available: false }); // Reset form
-    };
-    
-    const handleUpdateProduct = () => {
-        if (selectedProduct) {
-            setProducts((prev) => prev.map((p) => (p.id === selectedProduct.id ? { ...p, ...newProduct } : p)));
-            setIsEditDialogOpen(false);
-            setSelectedProduct(null);
-            setNewProduct({ id: 0, name: '', description: '', price: 0, available: false }); // Reset form
+        try {
+            productSchema.parse(newProduct);
+            setProducts((prev) => [...prev, { ...newProduct, id: Date.now() }]);
+            closeCreateDialog();
+        } catch (e) {
+            handleValidationErrors(e);
         }
     };
-    const handleDeleteProduct = (id: number) => {
-        setProducts((prev) => prev.filter((product) => product.id !== id));
-        setIsDeleteDialogOpen(false);
-        setConfirmDeleteProduct(null);
+
+    const handleUpdateProduct = () => {
+        if (confirmDeleteProduct) {
+            try {
+                productSchema.parse(newProduct);
+                setProducts((prev) =>
+                    prev.map((p) => (p.id === confirmDeleteProduct.id ? { ...p, ...newProduct } : p))
+                );
+                closeEditDialog();
+            } catch (e) {
+                handleValidationErrors(e);
+            }
+        }
+    };
+
+    const handleDeleteProduct = () => {
+        if (confirmDeleteProduct) {
+            setProducts((prev) => prev.filter((p) => p.id !== confirmDeleteProduct.id));
+            closeDeleteDialog();
+        }
     };
 
     const filteredProducts = products.filter(product =>
         product.name.toLowerCase().includes(searchTerm.toLowerCase())
     );
-
     const paginatedProducts = filteredProducts.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE);
     const totalPages = Math.ceil(filteredProducts.length / ITEMS_PER_PAGE);
 
+    const handleSort = () => {
+        const sortedProducts = [...products].sort((a, b) => {
+            return sortOrder === 'asc' ? a.price - b.price : b.price - a.price;
+        });
+        setProducts(sortedProducts);
+        setSortOrder(prev => prev === 'asc' ? 'desc' : 'asc');
+    };
+
+    const handleValidationErrors = (e: unknown) => {
+        if (e instanceof z.ZodError) {
+            const formErrors = e.errors.reduce((acc, curr) => {
+                acc[curr.path[0]] = curr.message;
+                return acc;
+            }, {} as { [key: string]: string });
+            setErrors(formErrors);
+        }
+    };
+    const closeCreateDialog = () => {
+        setIsCreateDialogOpen(false);
+        resetProductForm();
+    };
+
+    const closeEditDialog = () => {
+        setIsEditDialogOpen(false);
+        resetProductForm();
+    };
+
+    const closeDeleteDialog = () => {
+        setIsDeleteDialogOpen(false);
+        setConfirmDeleteProduct(null);
+    };
+
+    const resetProductForm = () => {
+        setNewProduct({ id: 0, name: '', description: '', price: 0, available: true });
+        setErrors({});
+    };
+
     return (
         <div className="flex flex-col p-4 space-y-4">
-            
             <h1 className="text-2xl font-bold">Lista de Produtos</h1>
             <div className="flex flex-col md:flex-row justify-between space-y-4 md:space-y-0 md:space-x-4">
                 <Input
@@ -136,7 +172,7 @@ const HomePage = () => {
                 </Button>
             </div>
 
-            {/* Tabela de Produtos */}
+            {/* Product Table */}
             <Table>
                 <TableCaption>Uma lista dos produtos disponíveis.</TableCaption>
                 <TableHeader>
@@ -155,13 +191,12 @@ const HomePage = () => {
                             <TableCell className="font-medium">{product.id}</TableCell>
                             <TableCell>{product.name}</TableCell>
                             <TableCell>{product.description}</TableCell>
-                            <TableCell className="text-right">{typeof product.price === 'number' ? product.price.toFixed(2) : 'Preço inválido'}
-                            </TableCell>
+                            <TableCell className="text-right">{product.price.toFixed(2)}</TableCell>
                             <TableCell>{product.available ? 'Sim' : 'Não'}</TableCell>
                             <TableCell>
                                 <Button
                                     variant="outline"
-                                    onClick={() => { setSelectedProduct(product); setIsEditDialogOpen(true); setNewProduct(product); }}
+                                    onClick={() => { setConfirmDeleteProduct(product); setIsEditDialogOpen(true); setNewProduct(product); }}
                                     className="mr-2 text-blue-500 hover:bg-blue-100"
                                 >
                                     <FaEdit />
@@ -191,140 +226,146 @@ const HomePage = () => {
                                 onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
                                 disabled={currentPage === totalPages}
                             >
-                                Próxima
+                                Próximo
                             </Button>
                         </TableCell>
                     </TableRow>
                 </TableFooter>
             </Table>
 
-            {/* Dialog para Criar Produto */}
-            <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
+            {/* Create Product Dialog */}
+            <Dialog open={isCreateDialogOpen} onOpenChange={closeCreateDialog}>
                 <DialogContent>
                     <DialogHeader>
                         <DialogTitle>Criar Novo Produto</DialogTitle>
-                        <DialogDescription>
-                            Preencha os detalhes do novo produto.
-                        </DialogDescription>
+                        <DialogDescription>Preencha as informações do produto.</DialogDescription>
                     </DialogHeader>
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">Nome do Produto</label>
+                    <div className="flex flex-col">
+                        <label htmlFor="product-name" className="mt-2 mb-2">Nome</label>
                         <Input
+                            id="product-name"
                             placeholder="Nome"
                             value={newProduct.name}
                             onChange={(e) => setNewProduct({ ...newProduct, name: e.target.value })}
-                            className="mb-2"
                         />
-                        <label className="block text-sm font-medium text-gray-700 mb-2">Descrição do Produto</label>
+                        {errors.name && <span className="text-red-600">{errors.name}</span>}
+
+                        <label htmlFor="product-description" className="mt-2 mb-2">Descrição</label>
                         <Input
+                            id="product-description"
                             placeholder="Descrição"
                             value={newProduct.description}
                             onChange={(e) => setNewProduct({ ...newProduct, description: e.target.value })}
-                            className="mb-2"
+                            className="mt-2"
                         />
-                        <label className="block text-sm font-medium text-gray-700 mb-2">Preço</label>
-                         <Input
-                                placeholder="Preço"
-                                type="number"
-                                value={newProduct.price || ''}
-                                onChange={(e) => setNewProduct({ ...newProduct, price: parseFloat(e.target.value) })}
-                                className="mb-2"
-                            />
 
-                        <label className="block text-sm font-medium text-gray-700 mb-2">Disponível</label>
-                        <Select
-                            onValueChange={(value) => setNewProduct({ ...newProduct, available: value === 'Sim' })}
-                            value={newProduct.available ? 'Sim' : 'Não'}
-                        >
-                            <SelectTrigger className="mb-2">
-                                <SelectValue placeholder="Selecione..." />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectGroup>
-                                    <SelectItem value="Sim">Sim</SelectItem>
-                                    <SelectItem value="Não">Não</SelectItem>
-                                </SelectGroup>
-                            </SelectContent>
-                        </Select>
-                    </div>
-                    <DialogFooter>
-                        <Button onClick={handleCreateProduct}>Criar</Button>
-                        <Button onClick={() => setIsCreateDialogOpen(false)}>Cancelar</Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
-
-            {/* Dialog para Editar Produto */}
-            <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-                <DialogContent>
-                    <DialogHeader>
-                        <DialogTitle>Editar Produto</DialogTitle>
-                        <DialogDescription>
-                            Atualize os detalhes do produto selecionado.
-                        </DialogDescription>
-                    </DialogHeader>
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">Nome do Produto</label>
+                        <label htmlFor="product-price" className="mt-2 mb-2">Preço</label>
                         <Input
-                            placeholder="Nome"
-                            value={newProduct.name}
-                            onChange={(e) => setNewProduct({ ...newProduct, name: e.target.value })}
-                            className="mb-2"
-                        />
-                        <label className="block text-sm font-medium text-gray-700 mb-2">Descrição do Produto</label>
-                        <Input
-                            placeholder="Descrição"
-                            value={newProduct.description}
-                            onChange={(e) => setNewProduct({ ...newProduct, description: e.target.value })}
-                            className="mb-2"
-                        />
-                        <label className="block text-sm font-medium text-gray-700 mb-2">Preço</label>
-                        <Input
+                            id="product-price"
                             placeholder="Preço"
                             type="number"
                             value={newProduct.price}
-                            onChange={(e) => setNewProduct({ ...newProduct, price: parseFloat(e.target.value) })}
-                            className="mb-2"
+                            onChange={(e) => setNewProduct({ ...newProduct, price: parseFloat(e.target.value) || 0 })}
+                            className="mt-2"
                         />
-                        <label className="block text-sm font-medium text-gray-700 mb-2">Disponível</label>
+                        {errors.price && <span className="text-red-600">{errors.price}</span>}
+
+                        <label htmlFor="product-availability" className="mt-2 mb-2">Disponível?</label>
                         <Select
-                            onValueChange={(value) => setNewProduct({ ...newProduct, available: value === 'Sim' })}
-                            value={newProduct.available ? 'Sim' : 'Não'}
+                            value={newProduct.available ? 'sim' : 'não'}
+                            onValueChange={(value) => setNewProduct({ ...newProduct, available: value === 'sim' })}
                         >
-                            <SelectTrigger className="mb-2">
-                                <SelectValue placeholder="Selecione..." />
+                            <SelectTrigger>
+                                <SelectValue placeholder="Escolha" />
                             </SelectTrigger>
                             <SelectContent>
                                 <SelectGroup>
-                                    <SelectItem value="Sim">Sim</SelectItem>
-                                    <SelectItem value="Não">Não</SelectItem>
+                                    <SelectItem value="sim">Sim</SelectItem>
+                                    <SelectItem value="não">Não</SelectItem>
                                 </SelectGroup>
                             </SelectContent>
                         </Select>
                     </div>
                     <DialogFooter>
-                        <Button onClick={handleUpdateProduct}>Salvar</Button>
-                        <Button onClick={() => setIsEditDialogOpen(false)}>Cancelar</Button>
+                        <Button type="button" onClick={handleCreateProduct}>Criar</Button>
+                        <Button type="button" variant="outline" onClick={closeCreateDialog}>Cancelar</Button>
                     </DialogFooter>
                 </DialogContent>
             </Dialog>
 
-            {/* Dialog para Confirmar Exclusão */}
-            <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+            {/* Edit Product Dialog */}
+            <Dialog open={isEditDialogOpen} onOpenChange={closeEditDialog}>
                 <DialogContent>
                     <DialogHeader>
-                        <DialogTitle>Confirmar Exclusão</DialogTitle>
-                        <DialogDescription>
-                            Você tem certeza que deseja excluir o produto "{confirmDeleteProduct?.name}"?
-                        </DialogDescription>
+                        <DialogTitle>Editar Produto</DialogTitle>
+                        <DialogDescription>Atualize as informações do produto.</DialogDescription>
                     </DialogHeader>
+                    <div className="flex flex-col">
+                        <label htmlFor="product-name" className="mt-2 mb-2">Nome</label>
+                        <Input
+                            id="product-name"
+                            placeholder="Nome"
+                            value={newProduct.name}
+                            onChange={(e) => setNewProduct({ ...newProduct, name: e.target.value })}
+                        />
+                        {errors.name && <span className="text-red-600">{errors.name}</span>}
+
+                        <label htmlFor="product-description" className="mt-2 mb-2">Descrição</label>
+                        <Input
+                            id="product-description"
+                            placeholder="Descrição"
+                            value={newProduct.description}
+                            onChange={(e) => setNewProduct({ ...newProduct, description: e.target.value })}
+                            className="mt-2"
+                        />
+
+                        <label htmlFor="product-price" className="mt-2 mb-2">Preço</label>
+                        <Input
+                            id="product-price"
+                            placeholder="Preço"
+                            type="number"
+                            value={newProduct.price}
+                            onChange={(e) => setNewProduct({ ...newProduct, price: parseFloat(e.target.value) || 0 })}
+                            className="mt-2"
+                        />
+                        {errors.price && <span className="text-red-600">{errors.price}</span>}
+
+                        <label htmlFor="product-availability" className="mt-2 mb-2">Disponível?</label>
+                        <Select
+                            value={newProduct.available ? 'sim' : 'não'}
+                            onValueChange={(value) => setNewProduct({ ...newProduct, available: value === 'sim' })}
+                        >
+                            <SelectTrigger>
+                                <SelectValue placeholder="Escolha" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectGroup>
+                                    <SelectItem value="sim">Sim</SelectItem>
+                                    <SelectItem value="não">Não</SelectItem>
+                                </SelectGroup>
+                            </SelectContent>
+                        </Select>
+                    </div>
                     <DialogFooter>
-                        <Button onClick={() => handleDeleteProduct(confirmDeleteProduct?.id!)}>Excluir</Button>
-                        <Button onClick={() => setIsDeleteDialogOpen(false)}>Cancelar</Button>
+                        <Button type="button" onClick={handleUpdateProduct}>Atualizar</Button>
+                        <Button type="button" variant="outline" onClick={closeEditDialog}>Cancelar</Button>
                     </DialogFooter>
                 </DialogContent>
             </Dialog>
 
+            {/* Delete Product Dialog */}
+            <Dialog open={isDeleteDialogOpen} onOpenChange={closeDeleteDialog}>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>Excluir Produto</DialogTitle>
+                        <DialogDescription>Tem certeza que deseja excluir este produto?</DialogDescription>
+                    </DialogHeader>
+                    <DialogFooter>
+                        <Button type="button" onClick={handleDeleteProduct} className="bg-red-500 text-white">Excluir</Button>
+                        <Button type="button" variant="outline" onClick={closeDeleteDialog}>Cancelar</Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
         </div>
     );
 };
