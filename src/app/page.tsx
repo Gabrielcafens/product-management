@@ -154,7 +154,7 @@ const HomePage = () => {
             <h1 className="text-2xl font-bold">Lista de Produtos</h1>
             <div className="flex flex-col md:flex-row justify-between space-y-4 md:space-y-0 md:space-x-4">
                 <Input
-                    placeholder="Buscar por nome"
+                    placeholder="Buscar por nome do produto"
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                     className="w-1/2"
@@ -178,10 +178,10 @@ const HomePage = () => {
                 <TableHeader>
                     <TableRow>
                         <TableHead>ID</TableHead>
-                        <TableHead>Nome</TableHead>
-                        <TableHead>Descrição</TableHead>
-                        <TableHead className="text-right">Preço (R$)</TableHead>
-                        <TableHead>Disponível</TableHead>
+                        <TableHead>Nome do produto</TableHead>
+                        <TableHead> Descrição do produto</TableHead>
+                        <TableHead className="text-right">Valor do produto (R$)</TableHead>
+                        <TableHead> Disponível para venda</TableHead>
                         <TableHead>Ações</TableHead>
                     </TableRow>
                 </TableHeader>
@@ -241,28 +241,28 @@ const HomePage = () => {
                         <DialogDescription>Preencha as informações do produto.</DialogDescription>
                     </DialogHeader>
                     <div className="flex flex-col">
-                        <label htmlFor="product-name" className="mt-2 mb-2">Nome</label>
+                        <label htmlFor="product-name" className="mt-2 mb-2">Nome do produto</label>
                         <Input
                             id="product-name"
-                            placeholder="Nome"
+                            placeholder="Nome do produto"
                             value={newProduct.name}
                             onChange={(e) => setNewProduct({ ...newProduct, name: e.target.value })}
                         />
                         {errors.name && <span className="text-red-600">{errors.name}</span>}
 
-                        <label htmlFor="product-description" className="mt-2 mb-2">Descrição</label>
+                        <label htmlFor="product-description" className="mt-2 mb-2"> Descrição do produto</label>
                         <Input
                             id="product-description"
-                            placeholder="Descrição"
+                            placeholder="Descrição do produto"
                             value={newProduct.description}
                             onChange={(e) => setNewProduct({ ...newProduct, description: e.target.value })}
                             className="mt-2"
                         />
 
-                        <label htmlFor="product-price" className="mt-2 mb-2">Preço</label>
+                        <label htmlFor="product-price" className="mt-2 mb-2">Valor do produto</label>
                         <Input
                             id="product-price"
-                            placeholder="Preço"
+                            placeholder="Valor do produto"
                             type="number"
                             value={newProduct.price}
                             onChange={(e) => setNewProduct({ ...newProduct, price: parseFloat(e.target.value) || 0 })}
@@ -270,7 +270,7 @@ const HomePage = () => {
                         />
                         {errors.price && <span className="text-red-600">{errors.price}</span>}
 
-                        <label htmlFor="product-availability" className="mt-2 mb-2">Disponível?</label>
+                        <label htmlFor="product-availability" className="mt-2 mb-2">Disponível para venda?</label>
                         <Select
                             value={newProduct.available ? 'sim' : 'não'}
                             onValueChange={(value) => setNewProduct({ ...newProduct, available: value === 'sim' })}
@@ -301,28 +301,28 @@ const HomePage = () => {
                         <DialogDescription>Atualize as informações do produto.</DialogDescription>
                     </DialogHeader>
                     <div className="flex flex-col">
-                        <label htmlFor="product-name" className="mt-2 mb-2">Nome</label>
+                        <label htmlFor="product-name" className="mt-2 mb-2">Nome do produto</label>
                         <Input
                             id="product-name"
-                            placeholder="Nome"
+                            placeholder="Nome do produto"
                             value={newProduct.name}
                             onChange={(e) => setNewProduct({ ...newProduct, name: e.target.value })}
                         />
                         {errors.name && <span className="text-red-600">{errors.name}</span>}
 
-                        <label htmlFor="product-description" className="mt-2 mb-2">Descrição</label>
+                        <label htmlFor="product-description" className="mt-2 mb-2"> Descrição do produto</label>
                         <Input
                             id="product-description"
-                            placeholder="Descrição"
+                            placeholder=" Descrição do produto"
                             value={newProduct.description}
                             onChange={(e) => setNewProduct({ ...newProduct, description: e.target.value })}
                             className="mt-2"
                         />
 
-                        <label htmlFor="product-price" className="mt-2 mb-2">Preço</label>
+                        <label htmlFor="product-price" className="mt-2 mb-2">Valor do produto</label>
                         <Input
                             id="product-price"
-                            placeholder="Preço"
+                            placeholder="Valor do produto"
                             type="number"
                             value={newProduct.price}
                             onChange={(e) => setNewProduct({ ...newProduct, price: parseFloat(e.target.value) || 0 })}
@@ -330,7 +330,7 @@ const HomePage = () => {
                         />
                         {errors.price && <span className="text-red-600">{errors.price}</span>}
 
-                        <label htmlFor="product-availability" className="mt-2 mb-2">Disponível?</label>
+                        <label htmlFor="product-availability" className="mt-2 mb-2">Disponível para venda?</label>
                         <Select
                             value={newProduct.available ? 'sim' : 'não'}
                             onValueChange={(value) => setNewProduct({ ...newProduct, available: value === 'sim' })}
