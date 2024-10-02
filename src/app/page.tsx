@@ -21,13 +21,9 @@ import {
     DialogDescription,
     DialogFooter,
 } from '@/components/ui/dialog';
-import {
-    ContextMenu,
-    ContextMenuTrigger,
-    ContextMenuContent,
-    ContextMenuItem,
-} from '@/components/ui/context-menu';
-import { FaTrashAlt, FaEdit } from 'react-icons/fa';
+import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { FaTrashAlt, FaEdit, FaArrowDown, FaArrowUp } from 'react-icons/fa';
+import { HiPlus } from 'react-icons/hi';
 
 interface Product {
     id: number;
@@ -57,10 +53,11 @@ const HomePage = () => {
             const data = await response.json();
             const formattedProducts = data.map((product: Product) => ({
                 ...product,
-                price: parseFloat(product.price),
+                price: typeof product.price === 'number' ? product.price : parseFloat(product.price) || 0, // Ensure price is a number
             }));
             setProducts(formattedProducts);
         };
+        
 
         fetchProducts();
     }, []);
@@ -102,22 +99,29 @@ const HomePage = () => {
     const totalPages = Math.ceil(filteredProducts.length / ITEMS_PER_PAGE);
 
     return (
-        <div className="p-4">
-            <h1 className="text-2xl font-bold mb-4">Lista de Produtos</h1>
-            <div className="flex justify-between mb-4">
+        <div className="flex flex-col p-4 space-y-4">
+            <h1 className="text-2xl font-bold">Lista de Produtos</h1>
+            <div className="flex flex-col md:flex-row justify-between space-y-4 md:space-y-0 md:space-x-4">
                 <Input
                     placeholder="Buscar por nome"
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                     className="w-1/2"
                 />
-                <Button onClick={handleSort} className="ml-4">
+                <Button onClick={handleSort} className="ml-4 flex items-center">
+                    {sortOrder === 'asc' ? <FaArrowUp className="mr-1" /> : <FaArrowDown className="mr-1" />}
                     Ordenar pelo Preço ({sortOrder === 'asc' ? 'Crescente' : 'Decrescente'})
                 </Button>
-                <Button onClick={() => setIsCreateDialogOpen(true)} variant="primary" className="ml-2">
-                    Criar Novo Produto
+                <Button
+                    onClick={() => setIsCreateDialogOpen(true)}
+                    variant="outline"
+                    className="border border-blue-500 text-blue-500 hover:bg-blue-500 hover:text-white ml-2 flex items-center"
+                >
+                    <HiPlus className="mr-1" /> Criar Novo Produto
                 </Button>
             </div>
+
+            {/* Tabela de Produtos */}
             <Table>
                 <TableCaption>Uma lista dos produtos disponíveis.</TableCaption>
                 <TableHeader>
@@ -125,7 +129,7 @@ const HomePage = () => {
                         <TableHead>ID</TableHead>
                         <TableHead>Nome</TableHead>
                         <TableHead>Descrição</TableHead>
-                        <TableHead className="text-right">Preço</TableHead>
+                        <TableHead className="text-right">Preço (R$)</TableHead>
                         <TableHead>Disponível</TableHead>
                         <TableHead>Ações</TableHead>
                     </TableRow>
@@ -136,19 +140,21 @@ const HomePage = () => {
                             <TableCell className="font-medium">{product.id}</TableCell>
                             <TableCell>{product.name}</TableCell>
                             <TableCell>{product.description}</TableCell>
-                            <TableCell className="text-right">{product.price.toFixed(2)}</TableCell>
+                            <TableCell className="text-right">{typeof product.price === 'number' ? product.price.toFixed(2) : 'Preço inválido'}
+                            </TableCell>
                             <TableCell>{product.available ? 'Sim' : 'Não'}</TableCell>
                             <TableCell>
                                 <Button
                                     variant="outline"
                                     onClick={() => { setSelectedProduct(product); setIsEditDialogOpen(true); setNewProduct(product); }}
-                                    className="mr-2"
+                                    className="mr-2 text-blue-500 hover:bg-blue-100"
                                 >
                                     <FaEdit />
                                 </Button>
                                 <Button
                                     variant="outline"
                                     onClick={() => { setConfirmDeleteProduct(product); setIsDeleteDialogOpen(true); }}
+                                    className="text-red-500 hover:bg-red-100"
                                 >
                                     <FaTrashAlt />
                                 </Button>
@@ -187,36 +193,47 @@ const HomePage = () => {
                         </DialogDescription>
                     </DialogHeader>
                     <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Nome do Produto</label>
                         <Input
                             placeholder="Nome"
                             value={newProduct.name}
                             onChange={(e) => setNewProduct({ ...newProduct, name: e.target.value })}
                             className="mb-2"
                         />
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Descrição do Produto</label>
                         <Input
                             placeholder="Descrição"
                             value={newProduct.description}
                             onChange={(e) => setNewProduct({ ...newProduct, description: e.target.value })}
                             className="mb-2"
                         />
-                        <Input
-                            placeholder="Preço"
-                            type="number"
-                            value={newProduct.price}
-                            onChange={(e) => setNewProduct({ ...newProduct, price: parseFloat(e.target.value) })}
-                            className="mb-2"
-                        />
-                        <label>
-                            Disponível:
-                            <input
-                                type="checkbox"
-                                checked={newProduct.available}
-                                onChange={(e) => setNewProduct({ ...newProduct, available: e.target.checked })}
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Preço</label>
+                         <Input
+                                placeholder="Preço"
+                                type="number"
+                                value={newProduct.price || ''}
+                                onChange={(e) => setNewProduct({ ...newProduct, price: parseFloat(e.target.value) })}
+                                className="mb-2"
                             />
-                        </label>
+
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Disponível</label>
+                        <Select
+                            onValueChange={(value) => setNewProduct({ ...newProduct, available: value === 'Sim' })}
+                            value={newProduct.available ? 'Sim' : 'Não'}
+                        >
+                            <SelectTrigger className="mb-2">
+                                <SelectValue placeholder="Selecione..." />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectGroup>
+                                    <SelectItem value="Sim">Sim</SelectItem>
+                                    <SelectItem value="Não">Não</SelectItem>
+                                </SelectGroup>
+                            </SelectContent>
+                        </Select>
                     </div>
                     <DialogFooter>
-                        <Button onClick={handleCreateProduct}>Salvar</Button>
+                        <Button onClick={handleCreateProduct}>Criar</Button>
                         <Button onClick={() => setIsCreateDialogOpen(false)}>Cancelar</Button>
                     </DialogFooter>
                 </DialogContent>
@@ -228,58 +245,68 @@ const HomePage = () => {
                     <DialogHeader>
                         <DialogTitle>Editar Produto</DialogTitle>
                         <DialogDescription>
-                            Altere os detalhes do produto.
+                            Atualize os detalhes do produto selecionado.
                         </DialogDescription>
                     </DialogHeader>
-                    {selectedProduct && (
-                        <div>
-                            <Input
-                                placeholder="Nome"
-                                value={newProduct.name}
-                                onChange={(e) => setNewProduct({ ...newProduct, name: e.target.value })}
-                                className="mb-2"
-                            />
-                            <Input
-                                placeholder="Descrição"
-                                value={newProduct.description}
-                                onChange={(e) => setNewProduct({ ...newProduct, description: e.target.value })}
-                                className="mb-2"
-                            />
-                            <Input
-                                placeholder="Preço"
-                                type="number"
-                                value={newProduct.price}
-                                onChange={(e) => setNewProduct({ ...newProduct, price: parseFloat(e.target.value) })}
-                                className="mb-2"
-                            />
-                            <label>
-                                Disponível:
-                                <input
-                                    type="checkbox"
-                                    checked={newProduct.available}
-                                    onChange={(e) => setNewProduct({ ...newProduct, available: e.target.checked })}
-                                />
-                            </label>
-                        </div>
-                    )}
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Nome do Produto</label>
+                        <Input
+                            placeholder="Nome"
+                            value={newProduct.name}
+                            onChange={(e) => setNewProduct({ ...newProduct, name: e.target.value })}
+                            className="mb-2"
+                        />
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Descrição do Produto</label>
+                        <Input
+                            placeholder="Descrição"
+                            value={newProduct.description}
+                            onChange={(e) => setNewProduct({ ...newProduct, description: e.target.value })}
+                            className="mb-2"
+                        />
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Preço</label>
+                        <Input
+                            placeholder="Preço"
+                            type="number"
+                            value={newProduct.price}
+                            onChange={(e) => setNewProduct({ ...newProduct, price: parseFloat(e.target.value) })}
+                            className="mb-2"
+                        />
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Disponível</label>
+                        <Select
+                            onValueChange={(value) => setNewProduct({ ...newProduct, available: value === 'Sim' })}
+                            value={newProduct.available ? 'Sim' : 'Não'}
+                        >
+                            <SelectTrigger className="mb-2">
+                                <SelectValue placeholder="Selecione..." />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectGroup>
+                                    <SelectItem value="Sim">Sim</SelectItem>
+                                    <SelectItem value="Não">Não</SelectItem>
+                                </SelectGroup>
+                            </SelectContent>
+                        </Select>
+                    </div>
                     <DialogFooter>
-                        <Button onClick={handleUpdateProduct}>Atualizar</Button>
+                        <Button onClick={handleUpdateProduct}>Salvar</Button>
                         <Button onClick={() => setIsEditDialogOpen(false)}>Cancelar</Button>
                     </DialogFooter>
                 </DialogContent>
             </Dialog>
 
-            {/* Dialog para Excluir Produto */}
+            {/* Dialog para Confirmar Exclusão */}
             <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
                 <DialogContent>
                     <DialogHeader>
                         <DialogTitle>Excluir Produto</DialogTitle>
                         <DialogDescription>
-                            Tem certeza que deseja excluir este produto?
+                            Tem certeza que deseja excluir o produto "{confirmDeleteProduct?.name}"?
                         </DialogDescription>
                     </DialogHeader>
                     <DialogFooter>
-                        <Button onClick={() => confirmDeleteProduct && handleDeleteProduct(confirmDeleteProduct.id)}>Excluir</Button>
+                        <Button onClick={() => handleDeleteProduct(confirmDeleteProduct!.id)} className="text-red-500">
+                            Excluir
+                        </Button>
                         <Button onClick={() => setIsDeleteDialogOpen(false)}>Cancelar</Button>
                     </DialogFooter>
                 </DialogContent>

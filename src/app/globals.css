@@ -76,3 +76,15 @@ body {
     @apply bg-background text-foreground;
   }
 }
+@media (max-width: 768px) {
+  .table {
+      display: block;
+      overflow-x: auto; /* Habilita scroll horizontal */
+      white-space: nowrap; /* Impede que a tabela quebre a linha */
+  }
+
+  .table-cell {
+      display: block; /* Cada célula em sua própria linha */
+      width: 100%; /* Ocupa toda a largura disponível */
+  }
+}
