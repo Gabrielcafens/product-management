@@ -54,19 +54,20 @@ Acesse a aplicação em http://localhost:3000.
 
 ### Vídeo
 Assista ao vídeo para ver a aplicação em ação:
-[![Vídeo de Demonstração](link-do-video-thumbnail)](assets/demoproductmanagement.mp4)
+[![Vídeo de Demonstração](https://drive.google.com/file/d/1abEtSqc3OlJ67lj3Fnn5Y4wz86oU4G0h/view?usp=sharing)
 
 ### Prints da Aplicação
 Aqui estão algumas capturas de tela que mostram as principais funcionalidades da aplicação:
 
 1. **Tela Inicial**
-   ![Tela Inicial](assets/pt1.png)
-   
-2. **Tela de Editar Produto**
-   ![Tela de Editar Produto](assets/pt2.png)
+   ![Tela Inicial](https://drive.google.com/uc?id=1rOm9OEUsrBhcrARXoZ_i38QQj30gUAJ6)
 
-3. **Tela de um Produto**
-   ![Confirmação de Criar Produto](assets/pt5.png)
+2. **Tela de Editar Produto**
+   ![Tela de Editar Produto](https://drive.google.com/uc?id=1mDQ1-lcgGfarozLRnvYMh-sgTx4CjmsP)
+
+3. **Confirmação de Criar Produto**
+   ![Confirmação de Criar Produto](https://drive.google.com/uc?id=1QifXv6MNWD9dE_-nW15Sxnm1QALqwWA9)
+
 
 
 ## Contribuição
