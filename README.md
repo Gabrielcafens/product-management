@@ -54,7 +54,7 @@ Acesse a aplicação em http://localhost:3000.
 
 ### Vídeo
 Assista ao vídeo para ver a aplicação em ação:
-[![Vídeo de Demonstração](https://drive.google.com/file/d/1abEtSqc3OlJ67lj3Fnn5Y4wz86oU4G0h/view?usp=sharing)
+[Link para o Vídeo de Demonstração](https://drive.google.com/file/d/1abEtSqc3OlJ67lj3Fnn5Y4wz86oU4G0h/view?usp=sharing)
 
 ### Prints da Aplicação
 Aqui estão algumas capturas de tela que mostram as principais funcionalidades da aplicação:
