@@ -62,12 +62,8 @@ Aqui estão algumas capturas de tela que mostram as principais funcionalidades d
 1. **Tela Inicial**
    ![Tela Inicial](https://drive.google.com/uc?id=1rOm9OEUsrBhcrARXoZ_i38QQj30gUAJ6)
 
-2. **Tela de Editar Produto**
-   ![Tela de Editar Produto](https://drive.google.com/uc?id=1mDQ1-lcgGfarozLRnvYMh-sgTx4CjmsP)
-
-3. **Confirmação de Criar Produto**
+2.**Confirmação de Criar Produto**
    ![Confirmação de Criar Produto](https://drive.google.com/uc?id=1QifXv6MNWD9dE_-nW15Sxnm1QALqwWA9)
-
 
 
 ## Contribuição
