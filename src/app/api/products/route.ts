@@ -11,3 +11,17 @@ export async function GET() {
         return NextResponse.error();
     }
 }
+
+export async function PUT(request: Request) {
+    try {
+        const { id, name, price } = await request.json();
+        const { rows } = await pool.query(
+            'UPDATE products SET name = $1, price = $2 WHERE id = $3 RETURNING *',
+            [name, price, id]
+        );
+        return NextResponse.json(rows[0]);
+    } catch (error) {
+        console.error('Error updating product:', error);
+        return NextResponse.error();
+    }
+}
